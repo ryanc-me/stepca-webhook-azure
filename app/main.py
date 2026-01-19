@@ -203,10 +203,11 @@ async def webhook(request: Request) -> Dict[str, Any]:
     user_object_id = _resolve_user_object_id(user_email)
     group_ids = _fetch_group_ids(user_object_id)
     logger.info(
-        "azure_enrich user_email=%s user_id=%s group_count=%s",
+        "azure_enrich user_email=%s user_id=%s group_count=%s group_ids=[%s]",
         user_email,
         user_object_id,
         len(group_ids),
+        ", ".join(group_ids),
     )
 
     output_claim = os.getenv("AZURE_GROUPS_CLAIM_NAME", "azure_group_ids")
@@ -234,7 +235,9 @@ def _verify_stepca_signature(request: Request, raw_body: bytes) -> None:
     try:
         secret_bytes = base64.b64decode(secret, validate=True)
     except (binascii.Error, ValueError) as exc:
-        raise HTTPException(status_code=500, detail="Invalid STEPCA_WEBHOOK_SECRET base64") from exc
+        raise HTTPException(
+            status_code=500, detail="Invalid STEPCA_WEBHOOK_SECRET base64"
+        ) from exc
 
     digest = hmac.new(secret_bytes, raw_body, hashlib.sha256).digest()
     expected_hex = digest.hex()
